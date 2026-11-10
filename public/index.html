@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>xBloom Omni Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; background-color: #0c0a09; color: #f5f5f4; }
+    .copper-btn { background: linear-gradient(135deg, #d97706, #b45309); }
+    .glass { background: rgba(26, 24, 22, 0.95); border: 1px solid rgba(180, 83, 9, 0.25); }
+  </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+  <header class="w-full max-w-lg text-center py-4 mb-4 border-b border-stone-800">
+    <h1 class="text-xl font-bold text-amber-500">xBloom Omni Studio</h1>
+    <p class="text-xs text-stone-400 mt-1">حلّل كيس القهوة بالذكاء الاصطناعي واستخرج وصفة قمع Omni فوراً</p>
+  </header>
+
+  <main class="w-full max-w-lg flex flex-col gap-4">
+    <div class="grid grid-cols-2 gap-2">
+      <button id="hotBtn" class="py-2.5 rounded-xl border border-amber-500 bg-amber-500/20 text-amber-300 font-bold text-xs">☕ قهوة حارة</button>
+      <button id="icedBtn" class="py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs">🧊 آيس دريب</button>
+    </div>
+
+    <div id="dropZone" class="glass rounded-2xl p-6 text-center cursor-pointer border-dashed border-2 border-stone-700 hover:border-amber-500 transition">
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <p class="text-sm font-bold text-white mb-1">اختر صورة كيس القهوة من الاستوديو</p>
+      <p class="text-xs text-stone-500">اضغط هنا لرفع الصورة مباشرة</p>
+      <img id="preview" class="hidden mt-3 w-full h-48 object-cover rounded-xl border border-stone-700">
+    </div>
+
+    <button id="submitBtn" class="copper-btn text-black font-extrabold py-3.5 rounded-xl text-sm shadow-lg hover:brightness-110 disabled:opacity-50 transition">
+      بدء التحليل واستخراج الوصفة
+    </button>
+    <div id="loader" class="hidden text-center text-xs text-amber-400 animate-pulse font-bold">جارٍ قراءة بيانات الكيس وهندسة وصفة قمع Omni...</div>
+
+    <div id="resultCard" class="hidden glass rounded-2xl p-5 border-amber-900/60 shadow-2xl">
+      <div class="border-b border-stone-800 pb-3 mb-3">
+        <span id="resBadge" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold"></span>
+        <h2 id="resTitle" class="text-lg font-bold text-white mt-1"></h2>
+        <p id="resSub" class="text-xs text-stone-400"></p>
+        <p id="resNotes" class="text-xs text-amber-400/90 mt-1"></p>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
+          <span class="text-[10px] text-stone-400 block">البن</span>
+          <span id="resDose" class="text-xs font-bold text-white"></span>
+        </div>
+        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
+          <span class="text-[10px] text-stone-400 block">الحرارة</span>
+          <span id="resTemp" class="text-xs font-bold text-amber-400"></span>
+        </div>
+        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
+          <span class="text-[10px] text-stone-400 block">طحنة xBloom</span>
+          <span id="resGrind" class="text-xs font-bold text-white"></span>
+        </div>
+      </div>
+
+      <h3 class="text-xs font-bold text-stone-300 mb-2">صبات قمع Omni المبرمجة:</h3>
+      <div id="poursList" class="flex flex-col gap-1.5 mb-4"></div>
+
+      <button id="whatsappBtn" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2">
+        مشاركة الوصفة عبر واتساب 📲
+      </button>
+    </div>
+  </main>
+
+  <script>
+    let isIced = false;
+    let base64Image = null;
+    let currentRecipe = null;
+
+    const hotBtn = document.getElementById('hotBtn');
+    const icedBtn = document.getElementById('icedBtn');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const submitBtn = document.getElementById('submitBtn');
+    const loader = document.getElementById('loader');
+    const resultCard = document.getElementById('resultCard');
+
+    hotBtn.onclick = () => { isIced = false; hotBtn.className = "py-2.5 rounded-xl border border-amber-500 bg-amber-500/20 text-amber-300 font-bold text-xs"; icedBtn.className = "py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs"; };
+    icedBtn.onclick = () => { isIced = true; icedBtn.className = "py-2.5 rounded-xl border border-sky-500 bg-sky-500/20 text-sky-300 font-bold text-xs"; hotBtn.className = "py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs"; };
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          preview.src = ev.target.result;
+          preview.classList.remove('hidden');
+          base64Image = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    submitBtn.onclick = async () => {
+      if (!base64Image) return alert('يرجى اختيار صورة كيس القهوة أولاً.');
+      submitBtn.disabled = true;
+      loader.classList.remove('hidden');
+      resultCard.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64Image, isIced })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل التحليل');
+        
+        currentRecipe = data;
+        displayRecipe(data);
+      } catch (err) {
+        alert('خطأ: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        loader.classList.add('hidden');
+      }
+    };
+
+    function displayRecipe(r) {
+      document.getElementById('resBadge').innerText = isIced ? 'آيس دريب مركز' : 'قهوة حارة متوازنة';
+      document.getElementById('resTitle').innerText = r.beanName || r.bean_name;
+      document.getElementById('resSub').innerText = `${r.roaster} | ${r.origin} | ${r.process} (${r.roast_level})`;
+      document.getElementById('resNotes').innerText = r.notes ? `الإيحاءات: ${r.notes.join(' • ')}` : '';
+      document.getElementById('resDose').innerText = `${r.dose}g`;
+      document.getElementById('resTemp').innerText = `${r.temp}°C`;
+      document.getElementById('resGrind').innerText = r.xbloom_grind;
+
+      const poursList = document.getElementById('poursList');
+      poursList.innerHTML = '';
+      r.pours.forEach(p => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-stone-900/80 p-2 rounded border border-stone-800 text-xs";
+        div.innerHTML = `<span><strong>${p.step}. ${p.title}</strong> (${p.pattern})</span><span class="text-amber-400 font-bold">${p.ml}ml • ${p.flow}g/s • ${p.wait}ث</span>`;
+        poursList.appendChild(div);
+      });
+
+      resultCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('whatsappBtn').onclick = () => {
+      if (!currentRecipe) return;
+      const r = currentRecipe;
+      const text = `☕ *وصفة xBloom Omni Dripper*\n🌱 *المحصول:* ${r.bean_name}\n📍 *المحمصة والبلد:* ${r.roaster} - ${r.origin}\n✨ *المعالجة:* ${r.process}\n\n📐 *المعايير:*\n• البن: ${r.dose}g\n• الحرارة: ${r.temp}°C\n• الطحنة: ${r.xbloom_grind}\n• السائل: ${r.total_liquid}\n\n🌊 *الصبات:*\n` + r.pours.map(p => `• ${p.title}: ${p.ml}ml (تدفق ${p.flow}g/s - انتظار ${p.wait}ث)`).join('\n');
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    };
+  </script>
+</body>
+</html>
