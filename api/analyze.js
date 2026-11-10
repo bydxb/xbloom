@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'الطريقة غير مسموحة' });
   }
 
   try {
@@ -23,28 +23,18 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'مفتاح GEMINI_API_KEY غير موجود في إعدادات Vercel' });
+      return res.status(500).json({ error: 'مفتاح السيرفر غير مهيأ في Vercel' });
     }
-
-    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
     const promptText = `
 أنت خبير محاصيل قهوة وباريستا معتمد لمكينة xBloom Studio وقمع Omni Dripper الأصلي بفلتر Wave المسطح.
-افحص صورة كيس القهوة المرفقة واستخرج البيانات المطبوعة عليها حرفياً:
-1. اسم المحصول (bean_name)
-2. المحمصة (roaster)
-3. البلد والمنطقة (origin)
-4. المعالجة (process)
-5. التحميص (roast_level)
-6. الإيحاءات (notes)
-
-ثم صمم وصفة مبرمجة ومطابقة لقمع Omni Dripper:
+افحص صورة كيس القهوة واستخرج بيانات المحصول وصمم وصفة مبرمجة مطابقة لقمع Omni:
 - إذا كان حاراً: 15g بن إلى 225ml ماء.
-- إذا كان آيس دريب (${isIced}): 16g بن، 160ml ماء ساخن + 90g ثلج.
-- درجات الطحن: لقمع Omni على xBloom وعلى Kingrinder K6.
-- الصبات: 4 صبات مع تحديد كمية الماء بالملي وسرعة التدفق flow ووقت الانتظار.
+- إذا كان آيس دريب (${isIced}): 16g بن، 160ml ماء ساخن + 90g ثلج بالسيرفر.
+- درجات الطحن: لقمع Omni على مكينة xBloom ومطحنة K6 اليدوية.
+- الصبات: 4 صبات بالملي ومعدل التدفق flow ووقت الانتظار.
 
-أرجع الرد حصراً بصيغة JSON نظيفة فقط دون أي نصوص خارج القوسين:
+أرجع النتيجة حصراً بصيغة JSON نظيفة فقط دون أي كلام خارجي:
 {
   "bean_name": "اسم المحصول",
   "origin": "البلد والمنطقة",
@@ -66,44 +56,54 @@ export default async function handler(req, res) {
 }
 `;
 
-    // استدعاء النموذج الرسمي المدعوم لحسابك عبر REST API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptText },
-              { inline_data: { mime_type: 'image/jpeg', data: cleanBase64 } }
-            ]
-          }
-        ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    // تجربة مسارات بديلة رسمية لتفادي أوقات الذروة
+    const endpoints = [
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`
+    ];
+
+    let lastError = null;
+
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: promptText },
+                  { inline_data: { mime_type: 'image/jpeg', data: cleanBase64 } }
+                ]
+              }
+            ],
+            generationConfig: {
+              response_mime_type: 'application/json',
+              temperature: 0.1
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          const rawText = data.candidates[0].content.parts[0].text;
+          const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          return res.status(200).json(JSON.parse(cleaned));
         }
-      })
-    });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      const googleError = data.error?.message || JSON.stringify(data.error) || 'خطأ من Google API';
-      return res.status(response.status).json({ error: googleError });
+        lastError = data.error?.message || 'خطأ في معالجة النموذج';
+      } catch (err) {
+        lastError = err.message;
+      }
     }
 
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!candidateText) {
-      return res.status(500).json({ error: 'لم يُرجع النموذج أي نص للتحليل' });
-    }
-
-    const cleanJsonText = candidateText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    const parsedRecipe = JSON.parse(cleanJsonText);
-
-    return res.status(200).json(parsedRecipe);
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message || 'حدث خطأ داخلي' });
+    return res.status(503).json({ error: lastError || 'تعذر الوصول للخدمة مؤقتاً' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'خطأ داخلي' });
   }
 }
