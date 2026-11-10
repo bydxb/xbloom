@@ -1,175 +1,270 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>xBloom Omni Studio</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xBloom Studio AI | وصفات قمع Omni</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Tajawal', sans-serif; background-color: #0c0a09; color: #f5f5f4; }
-    .copper-btn { background: linear-gradient(135deg, #d97706, #b45309); }
-    .glass { background: rgba(26, 24, 22, 0.95); border: 1px solid rgba(180, 83, 9, 0.25); }
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background-color: #0b0f17;
+      color: #f3f4f6;
+    }
+    .accent-border {
+      border: 1px solid rgba(217, 119, 6, 0.25);
+    }
   </style>
 </head>
-<body class="min-h-screen p-4 flex flex-col items-center">
-  <header class="w-full max-w-lg text-center py-4 mb-4 border-b border-stone-800">
-    <h1 class="text-xl font-bold text-amber-500">xBloom Omni Studio</h1>
-    <p class="text-xs text-stone-400 mt-1">حلّل كيس القهوة بالذكاء الاصطناعي واستخرج وصفة قمع Omni فوراً</p>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-6 pb-20">
+
+  <!-- Header -->
+  <header class="w-full max-w-md text-center my-6">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3">
+      <span>xBloom Studio • Omni Dripper</span>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">مُهندس وصفات القهوة</h1>
+    <p class="text-xs sm:text-sm text-gray-400 mt-1">ارفع صورة الكيس لاستخراج الوصفة الهندسية الدقيقة لمكينتك</p>
   </header>
 
-  <main class="w-full max-w-lg flex flex-col gap-4">
-    <div class="grid grid-cols-2 gap-2">
-      <button id="hotBtn" class="py-2.5 rounded-xl border border-amber-500 bg-amber-500/20 text-amber-300 font-bold text-xs">☕ قهوة حارة</button>
-      <button id="icedBtn" class="py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs">🧊 آيس دريب</button>
-    </div>
-
-    <div id="dropZone" class="glass rounded-2xl p-6 text-center cursor-pointer border-dashed border-2 border-stone-700 hover:border-amber-500 transition">
-      <input type="file" id="fileInput" accept="image/*" class="hidden">
-      <p class="text-sm font-bold text-white mb-1">اختر صورة كيس القهوة من الاستوديو</p>
-      <p class="text-xs text-stone-500">اضغط هنا لرفع الصورة مباشرة</p>
-      <img id="preview" class="hidden mt-3 w-full h-48 object-cover rounded-xl border border-stone-700">
-    </div>
-
-    <button id="submitBtn" class="copper-btn text-black font-extrabold py-3.5 rounded-xl text-sm shadow-lg hover:brightness-110 disabled:opacity-50 transition">
-      بدء التحليل واستخراج الوصفة
-    </button>
-    <div id="loader" class="hidden text-center text-xs text-amber-400 animate-pulse font-bold">جارٍ قراءة بيانات الكيس وهندسة وصفة قمع Omni...</div>
-
-    <div id="resultCard" class="hidden glass rounded-2xl p-5 border-amber-900/60 shadow-2xl">
-      <div class="border-b border-stone-800 pb-3 mb-3">
-        <span id="resBadge" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold"></span>
-        <h2 id="resTitle" class="text-lg font-bold text-white mt-1"></h2>
-        <p id="resSub" class="text-xs text-stone-400"></p>
-        <p id="resNotes" class="text-xs text-amber-400/90 mt-1"></p>
-      </div>
-
-      <div class="grid grid-cols-3 gap-2 mb-4 text-center">
-        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
-          <span class="text-[10px] text-stone-400 block">البن</span>
-          <span id="resDose" class="text-xs font-bold text-white"></span>
-        </div>
-        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
-          <span class="text-[10px] text-stone-400 block">الحرارة</span>
-          <span id="resTemp" class="text-xs font-bold text-amber-400"></span>
-        </div>
-        <div class="bg-stone-900 p-2 rounded-lg border border-stone-800">
-          <span class="text-[10px] text-stone-400 block">طحنة xBloom</span>
-          <span id="resGrind" class="text-xs font-bold text-white"></span>
-        </div>
-      </div>
-
-      <h3 class="text-xs font-bold text-stone-300 mb-2">صبات قمع Omni المبرمجة:</h3>
-      <div id="poursList" class="flex flex-col gap-1.5 mb-4"></div>
-
-      <button id="whatsappBtn" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2">
-        مشاركة الوصفة عبر واتساب 📲
+  <main class="w-full max-w-md flex flex-col gap-5">
+    
+    <!-- خيار حار / مثلج -->
+    <div class="bg-gray-900/80 p-1.5 rounded-2xl flex border border-gray-800">
+      <button id="btnHot" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-amber-600 text-white shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2">
+        <span>☕</span> قهوة حارة
+      </button>
+      <button id="btnIced" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white flex items-center justify-center gap-2">
+        <span>🧊</span> آيس دريب (Flash)
       </button>
     </div>
+
+    <!-- بطاقة رفع الصورة -->
+    <div class="bg-gray-900/90 rounded-2xl p-5 border border-gray-800 flex flex-col items-center text-center">
+      <input type="file" id="imageInput" accept="image/*" class="hidden" />
+      
+      <div id="dropZone" onclick="document.getElementById('imageInput').click()" class="w-full border-2 border-dashed border-gray-700 hover:border-amber-500/50 rounded-xl p-6 cursor-pointer transition-all flex flex-col items-center justify-center gap-3 bg-gray-950/40">
+        <div id="uploadIcon" class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 text-2xl">
+          📷
+        </div>
+        <img id="previewImg" class="hidden max-h-48 rounded-lg object-contain shadow-md" alt="معاينة الكيس" />
+        <div id="uploadPrompt" class="flex flex-col gap-1">
+          <span class="text-xs sm:text-sm font-bold text-gray-200">اضغط لرفع صورة كيس القهوة</span>
+          <span class="text-[11px] text-gray-500">تأكد من وضوح اسم المحصول والمعالجة</span>
+        </div>
+      </div>
+
+      <button id="analyzeBtn" disabled class="w-full mt-4 py-3 rounded-xl font-bold text-sm bg-gray-800 text-gray-500 cursor-not-allowed transition-all flex items-center justify-center gap-2">
+        <span>بدء التحليل واستخراج الوصفة</span>
+      </button>
+      
+      <div id="loadingStatus" class="hidden mt-3 text-xs text-amber-400 flex items-center justify-center gap-2 animate-pulse">
+        <svg class="animate-spin h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span>جارٍ قراءة بيانات المحصول وهندسة الصبات...</span>
+      </div>
+    </div>
+
+    <!-- قسم النتائج: مخفي تماماً ولن يظهر إلا بعد نجاح التحليل -->
+    <div id="resultContainer" class="hidden flex flex-col gap-4">
+      
+      <!-- كرت تفاصيل المحصول -->
+      <div class="bg-gray-900/95 rounded-2xl p-5 border border-gray-800">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-3">
+          <div>
+            <h2 id="resBeanName" class="text-lg font-black text-amber-400"></h2>
+            <p id="resOriginRoaster" class="text-xs text-gray-400 mt-0.5"></p>
+          </div>
+          <span id="resBadge" class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20"></span>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5 mb-4" id="resNotes"></div>
+
+        <!-- معايير الاستوديو الأساسية -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-gray-950/70 p-2.5 rounded-xl border border-gray-800">
+            <span class="block text-[10px] text-gray-500">كمية البن</span>
+            <span id="resDose" class="text-xs sm:text-sm font-extrabold text-white"></span>
+          </div>
+          <div class="bg-gray-950/70 p-2.5 rounded-xl border border-gray-800">
+            <span class="block text-[10px] text-gray-500">الحرارة</span>
+            <span id="resTemp" class="text-xs sm:text-sm font-extrabold text-amber-400"></span>
+          </div>
+          <div class="bg-gray-950/70 p-2.5 rounded-xl border border-gray-800">
+            <span class="block text-[10px] text-gray-500">طاحونة Studio</span>
+            <span id="resGrind" class="text-xs sm:text-sm font-extrabold text-emerald-400"></span>
+          </div>
+        </div>
+
+        <div class="mt-2 text-center bg-gray-950/40 py-1.5 rounded-lg border border-gray-800/60">
+          <span class="text-[11px] text-gray-400">مطحنة Kingrinder K6 الموازية: <strong id="resK6" class="text-gray-200"></strong></span>
+        </div>
+      </div>
+
+      <!-- خطوات الصب الحقيقية لقمع Omni -->
+      <div class="bg-gray-900/95 rounded-2xl p-5 border border-gray-800">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs sm:text-sm font-bold text-gray-300">صبات قمع Omni المبرمجة</h3>
+          <span id="resTotalLiquid" class="text-xs font-semibold text-amber-500"></span>
+        </div>
+
+        <div id="poursList" class="flex flex-col gap-2.5"></div>
+      </div>
+
+      <!-- أزرار المشاركة -->
+      <button id="whatsappBtn" class="w-full py-3 rounded-xl font-bold text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+        <span>مشاركة الوصفة عبر واتساب 📲</span>
+      </button>
+
+    </div>
+
   </main>
 
   <script>
     let isIced = false;
     let base64Image = null;
-    let currentRecipe = null;
+    let currentRecipeData = null;
 
-    const hotBtn = document.getElementById('hotBtn');
-    const icedBtn = document.getElementById('icedBtn');
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const submitBtn = document.getElementById('submitBtn');
-    const loader = document.getElementById('loader');
-    const resultCard = document.getElementById('resultCard');
+    const btnHot = document.getElementById('btnHot');
+    const btnIced = document.getElementById('btnIced');
+    const imageInput = document.getElementById('imageInput');
+    const previewImg = document.getElementById('previewImg');
+    const uploadIcon = document.getElementById('uploadIcon');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loadingStatus = document.getElementById('loadingStatus');
+    const resultContainer = document.getElementById('resultContainer');
 
-    hotBtn.onclick = () => { isIced = false; hotBtn.className = "py-2.5 rounded-xl border border-amber-500 bg-amber-500/20 text-amber-300 font-bold text-xs"; icedBtn.className = "py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs"; };
-    icedBtn.onclick = () => { isIced = true; icedBtn.className = "py-2.5 rounded-xl border border-sky-500 bg-sky-500/20 text-sky-300 font-bold text-xs"; hotBtn.className = "py-2.5 rounded-xl border border-stone-800 bg-stone-900 text-stone-400 font-bold text-xs"; };
+    btnHot.onclick = () => {
+      isIced = false;
+      btnHot.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-amber-600 text-white shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2';
+      btnIced.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white flex items-center justify-center gap-2';
+    };
 
-    dropZone.onclick = () => fileInput.click();
+    btnIced.onclick = () => {
+      isIced = true;
+      btnIced.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-sky-600 text-white shadow-lg shadow-sky-600/30 flex items-center justify-center gap-2';
+      btnHot.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white flex items-center justify-center gap-2';
+    };
 
-    // ضغط الصورة تلقائياً لتسريع الإرسال وتجنب timeout
-    fileInput.onchange = (e) => {
+    imageInput.onchange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 1000;
-        let w = img.width;
-        let h = img.height;
-        if (w > maxDim || h > maxDim) {
-          if (w > h) { h = (h * maxDim) / w; w = maxDim; }
-          else { w = (w * maxDim) / h; h = maxDim; }
-        }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        base64Image = canvas.toDataURL('image/jpeg', 0.85);
-        preview.src = base64Image;
-        preview.classList.remove('hidden');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        base64Image = event.target.result;
+        previewImg.src = base64Image;
+        previewImg.classList.remove('hidden');
+        uploadIcon.classList.add('hidden');
+        uploadPrompt.classList.add('hidden');
+
+        analyzeBtn.disabled = false;
+        analyzeBtn.className = 'w-full mt-4 py-3 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-500 text-white transition-all cursor-pointer shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2';
       };
+      reader.readAsDataURL(file);
     };
 
-    submitBtn.onclick = async () => {
-      if (!base64Image) return alert('يرجى اختيار صورة كيس القهوة أولاً.');
-      submitBtn.disabled = true;
-      loader.classList.remove('hidden');
-      resultCard.classList.add('hidden');
+    analyzeBtn.onclick = async () => {
+      if (!base64Image) return;
+
+      analyzeBtn.disabled = true;
+      loadingStatus.classList.remove('hidden');
+      resultContainer.classList.add('hidden');
 
       try {
-        const res = await fetch('/api/analyze', {
+        const response = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Image, isIced })
+          body: JSON.stringify({ imageBase64: base64Image, isIced: isIced })
         });
-        
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error('تعذر معالجة الطلب في السيرفر (تحقق من إعدادات Vercel)');
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'فشل في استخراج الوصفة');
         }
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'فشل التحليل');
-        
-        currentRecipe = data;
-        displayRecipe(data);
+        currentRecipeData = data;
+        renderRecipe(data);
+
       } catch (err) {
         alert('خطأ: ' + err.message);
       } finally {
-        submitBtn.disabled = false;
-        loader.classList.add('hidden');
+        analyzeBtn.disabled = false;
+        loadingStatus.classList.add('hidden');
       }
     };
 
-    function displayRecipe(r) {
-      document.getElementById('resBadge').innerText = isIced ? 'آيس دريب مركز' : 'قهوة حارة متوازنة';
-      document.getElementById('resTitle').innerText = r.bean_name || 'محصول مختص';
-      document.getElementById('resSub').innerText = `${r.roaster || ''} | ${r.origin || ''} | ${r.process || ''} (${r.roast_level || ''})`;
-      document.getElementById('resNotes').innerText = r.notes?.length ? `الإيحاءات: ${r.notes.join(' • ')}` : '';
-      document.getElementById('resDose').innerText = `${r.dose}g`;
-      document.getElementById('resTemp').innerText = `${r.temp}°C`;
-      document.getElementById('resGrind').innerText = r.xbloom_grind;
+    function renderRecipe(data) {
+      document.getElementById('resBeanName').textContent = data.bean_name || 'محصول مختص';
+      document.getElementById('resOriginRoaster').textContent = `${data.roaster || 'المحمصة'} • ${data.origin || 'المنشأ'} • ${data.process || 'المعالجة'}`;
+      document.getElementById('resBadge').textContent = isIced ? 'آيس دريب مركز' : 'قهوة حارة متوازنة';
 
-      const poursList = document.getElementById('poursList');
-      poursList.innerHTML = '';
-      (r.pours || []).forEach(p => {
-        const div = document.createElement('div');
-        div.className = "flex justify-between items-center bg-stone-900/80 p-2 rounded border border-stone-800 text-xs";
-        div.innerHTML = `<span><strong>${p.step}. ${p.title}</strong> (${p.pattern})</span><span class="text-amber-400 font-bold">${p.ml}ml • ${p.flow}g/s • ${p.wait}ث</span>`;
-        poursList.appendChild(div);
-      });
+      const notesBox = document.getElementById('resNotes');
+      notesBox.innerHTML = '';
+      if (Array.isArray(data.notes)) {
+        data.notes.forEach(note => {
+          const span = document.createElement('span');
+          span.className = 'text-[10px] px-2 py-0.5 rounded-md bg-gray-800 text-gray-300 border border-gray-700';
+          span.textContent = note;
+          notesBox.appendChild(span);
+        });
+      }
 
-      resultCard.classList.remove('hidden');
-      resultCard.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('resDose').textContent = `${data.dose}g`;
+      document.getElementById('resTemp').textContent = `${data.temp}°C`;
+      document.getElementById('resGrind').textContent = data.xbloom_grind;
+      document.getElementById('resK6').textContent = data.k6_grind;
+      document.getElementById('resTotalLiquid').textContent = data.total_liquid;
+
+      const poursBox = document.getElementById('poursList');
+      poursBox.innerHTML = '';
+
+      if (Array.isArray(data.pours)) {
+        data.pours.forEach((p, idx) => {
+          const div = document.createElement('div');
+          div.className = 'bg-gray-950/60 p-3 rounded-xl border border-gray-800/80 flex items-center justify-between text-xs';
+          div.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[10px]">${idx + 1}</span>
+              <div>
+                <span class="font-bold text-gray-200">${p.title}</span>
+                <span class="text-[10px] text-gray-500 block">تدفق: ${p.flow} ml/s • حركة: ${p.pattern}</span>
+              </div>
+            </div>
+            <div class="text-left font-mono">
+              <span class="font-black text-amber-400">${p.ml}ml</span>
+              <span class="text-[10px] text-gray-500 block">انتظار ${p.wait}ث</span>
+            </div>
+          `;
+          poursBox.appendChild(div);
+        });
+      }
+
+      resultContainer.classList.remove('hidden');
     }
 
     document.getElementById('whatsappBtn').onclick = () => {
-      if (!currentRecipe) return;
-      const r = currentRecipe;
-      const text = `☕ *وصفة xBloom Omni Dripper*\n🌱 *المحصول:* ${r.bean_name}\n📍 *المحمصة والبلد:* ${r.roaster} - ${r.origin}\n✨ *المعالجة:* ${r.process}\n\n📐 *المعايير:*\n• البن: ${r.dose}g\n• الحرارة: ${r.temp}°C\n• الطحنة: ${r.xbloom_grind}\n• السائل: ${r.total_liquid}\n\n🌊 *الصبات:*\n` + (r.pours || []).map(p => `• ${p.title}: ${p.ml}ml (تدفق ${p.flow}g/s - انتظار ${p.wait}ث)`).join('\n');
+      if (!currentRecipeData) return;
+      const d = currentRecipeData;
+      let text = `☕ *وصفة xBloom Studio الذكية* ☕\n\n`;
+      text += `• المحصول: ${d.bean_name}\n`;
+      text += `• المعالجة: ${d.process}\n`;
+      text += `• التحضير: ${isIced ? 'آيس دريب مركز' : 'قهوة حارة'}\n`;
+      text += `• البن: ${d.dose}g | الحرارة: ${d.temp}°C\n`;
+      text += `• طاحونة Studio: ${d.xbloom_grind}\n`;
+      text += `• مطحنة K6: ${d.k6_grind}\n\n`;
+      text += `*الصبات لقمع Omni:*\n`;
+      d.pours.forEach((p, i) => {
+        text += `${i + 1}. ${p.title}: ${p.ml}ml (تدفق ${p.flow} ml/s - نمط ${p.pattern} - انتظار ${p.wait}ث)\n`;
+      });
+      text += `\nإجمالي الماء: ${d.total_liquid}`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
   </script>
