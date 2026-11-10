@@ -27,14 +27,22 @@ export default async function handler(req, res) {
     }
 
     const promptText = `
-أنت خبير محاصيل قهوة مختصة وباريستا معتمد لمكينة xBloom Studio وقمع Omni Dripper الأصلي بفلتر Wave المسطح.
-افحص صورة كيس القهوة واستخرج بيانات المحصول وصمم وصفة مبرمجة مطابقة لقمع Omni:
-- إذا كان حاراً: 15g بن إلى 225ml ماء.
-- إذا كان آيس دريب (${isIced}): 16g بن، 160ml ماء ساخن + 90g ثلج.
-- درجات الطحن: لقمع Omni على مكينة xBloom ومطحنة K6 اليدوية.
-- الصبات: 4 صبات بالملي ومعدل التدفق flow ووقت الانتظار.
+أنت مهندس وخبير برمجة لمكينة القهوة الذكية xBloom Studio وقمع Omni Dripper الأصلي بفلتر الورق المسطح.
+افحص صورة كيس القهوة بدقة واستخرج بيانات المحصول، ثم صمم الوصفة بمعايير xBloom Studio الحقيقية:
 
-أرجع النتيجة حصراً بصيغة JSON نظيفة فقط:
+قواعد طاحونة xBloom Studio (مهم جداً وممنوع مخالفته):
+- طاحونة xBloom Studio تدرجها من 1 إلى 80 Click (نقرة).
+- قمع Omni Dripper للفلتر يتطلب طحنة بين 45 إلى 58 Click:
+  * المحاصيل المغسولة (Washed / Light): 46 - 49 Click.
+  * المحاصيل المجففة والمخمّرة واللاهوائية (Natural / Anaerobic / Honey): 50 - 55 Click (لتفادي انسداد الفلتر واستخلاص النكهات الفاكهية بنقاء).
+  * ممنوع منعاً باتاً كتابة أرقام عشرية مثل 4.2 أو 4.5. اكتبها دائماً برقم صحيح متبوعاً بـ Click (مثال: "52 Click").
+
+قواعد التحضير لقمع Omni:
+- حار: 15g بن إلى 225g ماء. الحرارة: 92-94 للمغسول، 89-91 للمجفف واللاهوائي.
+- مثلج (isIced = ${isIced}): 16g بن إلى 160g ماء حار + 90g ثلج بالسيرفر.
+- الصبات: 4 صبات لمكينة xBloom بنمط (Spiral أو Center) وتدفق ماء بالجرام/ثانية بين 2.0g/s و 3.0g/s.
+
+أرجع النتيجة حصراً بصيغة JSON بدون أي علامات markdown:
 {
   "bean_name": "اسم المحصول",
   "origin": "البلد والمنطقة",
@@ -43,14 +51,14 @@ export default async function handler(req, res) {
   "roast_level": "التحميص",
   "notes": ["إيحاء 1", "إيحاء 2"],
   "dose": 15.0,
-  "temp": 92,
-  "xbloom_grind": "4.2",
+  "temp": 91,
+  "xbloom_grind": "52 Click",
   "k6_grind": "78 نقرة",
   "total_liquid": "225ml",
   "pours": [
     {"step": 1, "title": "ترطيب (Bloom)", "ml": 45, "flow": 2.2, "pattern": "Spiral", "wait": 40},
-    {"step": 2, "title": "الصبة الأولى", "ml": 60, "flow": 2.8, "pattern": "Center", "wait": 20},
-    {"step": 3, "title": "الصبة الثانية", "ml": 60, "flow": 2.5, "pattern": "Spiral", "wait": 20},
+    {"step": 2, "title": "الصبة الأولى", "ml": 60, "flow": 2.6, "pattern": "Center", "wait": 20},
+    {"step": 3, "title": "الصبة الثانية", "ml": 60, "flow": 2.4, "pattern": "Spiral", "wait": 20},
     {"step": 4, "title": "صبة ختامية", "ml": 60, "flow": 2.0, "pattern": "Center", "wait": 25}
   ]
 }
@@ -78,16 +86,11 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       return res.status(response.status).json({ error: data.error?.message || 'خطأ في معالجة النموذج' });
     }
 
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return res.status(500).json({ error: 'لم يتم استلام نص من النموذج' });
-    }
-
     const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
     return res.status(200).json(JSON.parse(cleaned));
 
