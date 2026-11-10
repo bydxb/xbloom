@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     }
 
     const promptText = `
-أنت خبير محاصيل قهوة مختصة وباريستا معتمد لمكينة xBloom Studio وقمع Omni Dripper.
+أنت خبير محاصيل قهوة مختصة وباريستا معتمد لمكينة xBloom Studio وقمع Omni Dripper الأصلي بفلتر Wave المسطح.
 افحص صورة كيس القهوة واستخرج بيانات المحصول وصمم وصفة مبرمجة مطابقة لقمع Omni:
 - إذا كان حاراً: 15g بن إلى 225ml ماء.
 - إذا كان آيس دريب (${isIced}): 16g بن، 160ml ماء ساخن + 90g ثلج.
