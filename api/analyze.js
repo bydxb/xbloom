@@ -23,48 +23,20 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'مفتاح السيرفر غير مهيأ' });
+      return res.status(500).json({ error: 'مفتاح GEMINI_API_KEY غير موجود في Vercel' });
     }
 
-    // هنا نطلب منه التحليل الكيميائي والذاتي لكل محصول دون إعطائه أرقام صبات مسبقة
+    // الذكاء الاصطناعي وظيفته هنا فقط قراءة بيانات الكيس بدقة 100% دون التلاعب بأرقام المكينة
     const promptText = `
-أنت خبير محاصيل قهوة مختصة (Q-Grader) وباريستا محترف متخصص في مكينة xBloom Studio وقمع Omni Dripper الأصلي بفلتر مسطح (Flat-bottom Wave).
-
-مهمتك:
-1. اقرأ صورة كيس القهوة بدقة متناهية واستخرج: المحمصة، اسم المحصول، الدولة، المنطقة، السلالة، الارتفاع، نوع المعالجة، درجة التحميص، والإيحاءات.
-2. بناءً على هذه المتغيرات تحديداً (المعالجة، الكثافة المتوقعة من الارتفاع، والإيحاءات المطلوبة):
-   - ابتكر وصفة استخلاص متكاملة مخصصة لهذا المحصول بعينه لإبراز أجمل إيحاءاته.
-   - قيود طاحونة xBloom Studio: التدريج من 1 إلى 80 Click فقط كأرقام صحيحة (ممنوع الفواصل العشرية). اختر الكليك الدقيق المناسب لقمع Omni بناءً على معالجة هذا المحصول.
-   - اختر الحرارة المناسبة بدقة (بين 88°C و 94°C) لخدمة المعالجة ونقاء الكوب.
-   - هندسة الصبات: صمم عدد الصبات وتوزيع الماء والتدفق (flow rate بين 1.6g/s و 3.2g/s) ونمط الصب (Center أو Spiral) المناسب تماماً لكثافة وسرعة نزول هذا البن تحديداً في قمع Omni.
-   - إذا كان التحضير حاراً: استخلص 15g بن بإجمالي ماء 225ml.
-   - إذا كان التحضير مثلاً آيس دريب (isIced = ${isIced}): صمم وصفة مركزة تعتمد 16g بن و 160ml ماء ساخن و 90g ثلج.
-
-ممنوع استخدام قيم ثابتة أو متكررة. حلل المحصول كحالة فريدة من نوعها.
-
-أرجع النتيجة بصيغة JSON نظيفة فقط دون أي نصوص أو markdown:
+افحص صورة كيس القهوة واستخرج بيانات المحصول بدقة متناهية.
+أرجع النتيجة بصيغة JSON نظيفة فقط:
 {
-  "bean_name": "اسم المحصول",
-  "origin": "البلد والمنطقة والارتفاع",
-  "roaster": "المحمصة",
-  "process": "المعالجة",
-  "roast_level": "التحميص",
-  "notes": ["إيحاء 1", "إيحاء 2", "إيحاء 3"],
-  "dose": 15.0,
-  "temp": 91,
-  "xbloom_grind": "52 Click",
-  "k6_grind": "75 نقرة",
-  "total_liquid": "225ml",
-  "pours": [
-    {
-      "step": 1,
-      "title": "اسم المرحلة",
-      "ml": 45,
-      "flow": 2.0,
-      "pattern": "Spiral",
-      "wait": 35
-    }
-  ]
+  "bean_name": "اسم المحصول كاملاً",
+  "roaster": "اسم المحمصة",
+  "origin": "دولة المنشأ والمنطقة والارتفاع إن وجد",
+  "process": "نوع المعالجة بدقة (Washed, Natural, Anaerobic, Honey, Infused)",
+  "roast_level": "درجة التحميص (Light, Medium, Dark)",
+  "notes": ["إيحاء 1", "إيحاء 2", "إيحاء 3"]
 }
 `;
 
@@ -84,7 +56,7 @@ export default async function handler(req, res) {
         ],
         generationConfig: {
           response_mime_type: 'application/json',
-          temperature: 0.4
+          temperature: 0.1
         }
       })
     });
@@ -97,9 +69,55 @@ export default async function handler(req, res) {
 
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    return res.status(200).json(JSON.parse(cleaned));
+    const beanData = JSON.parse(cleaned);
+
+    // هندسة الوصفة برمجياً 100% وفق كتالوج xBloom Studio وقمع Omni لتفادي أي تخريف
+    const processStr = (beanData.process || '').toLowerCase();
+    const isAnaerobic = processStr.includes('anaerobic') || processStr.includes('ferment') || processStr.includes('تخمير') || processStr.includes('لاهوائي') || processStr.includes('infused');
+    const isWashed = processStr.includes('washed') || processStr.includes('مغسول');
+
+    let finalRecipe = {};
+
+    if (isIced) {
+      // آيس دريب (Flash Chill) هندسي دقيق لمكينة Studio
+      finalRecipe = {
+        ...beanData,
+        dose: 18.0,
+        temp: isAnaerobic ? 91 : (isWashed ? 94 : 93),
+        xbloom_grind: isAnaerobic ? "52 Click" : (isWashed ? "46 Click" : "49 Click"),
+        k6_grind: isAnaerobic ? "76 نقرة" : (isWashed ? "70 نقرة" : "73 نقرة"),
+        total_liquid: "150ml ماء ساخن + 100g ثلج بالسيرفر",
+        pours: [
+          { step: 1, title: "ترطيب وتفتيح (Bloom)", ml: 40, flow: 3.0, pattern: "Center", wait: 40 },
+          { step: 2, title: "استخلاص القوام والتركيز", ml: 55, flow: 3.2, pattern: "Spiral", wait: 20 },
+          { step: 3, title: "صبة ختامية مركزة", ml: 55, flow: 3.1, pattern: "Circular", wait: 20 }
+        ]
+      };
+    } else {
+      // قهوة حارة متوازنة ومضبوطة التدفق والكميات لقمع Omni
+      const temp = isAnaerobic ? 90 : (isWashed ? 93 : 92);
+      const grind = isAnaerobic ? "53 Click" : (isWashed ? "44 Click" : "48 Click");
+      const k6 = isAnaerobic ? "78 نقرة" : (isWashed ? "68 نقرة" : "74 نقرة");
+
+      finalRecipe = {
+        ...beanData,
+        dose: 15.0,
+        temp: temp,
+        xbloom_grind: grind,
+        k6_grind: k6,
+        total_liquid: "225ml",
+        pours: [
+          { step: 1, title: "ترطيب متجانس (Bloom)", ml: 45, flow: 3.0, pattern: "Spiral", wait: 35 },
+          { step: 2, title: "الصبة الأولى - تفعيل النكهات", ml: 60, flow: 3.3, pattern: "Spiral", wait: 20 },
+          { step: 3, title: "الصبة الثانية - التوازن", ml: 60, flow: 3.2, pattern: "Circular", wait: 20 },
+          { step: 4, title: "صبة ختامية نقية", ml: 60, flow: 3.0, pattern: "Center", wait: 25 }
+        ]
+      };
+    }
+
+    return res.status(200).json(finalRecipe);
 
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'خطأ داخلي' });
+    return res.status(500).json({ error: error.message || 'خطأ في معالجة الوصفة' });
   }
 }
